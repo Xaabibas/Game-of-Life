@@ -51,25 +51,10 @@ void color(int x, int y, int is_alive)
 	move(y, x);
 }
 
-int get(int **arr, int x, int y) 
-{
-	return *(*(arr + x) + y);
-}
-
-void set(int **arr, int x, int y, int val)
-{
-	*(*(arr + x) + y) = val;
-}
-
-void inc(int **arr, int x, int y)
-{
-	*(*(arr + x) + y) += 1;
-}
-
 void invert_field(int **generation, int x, int y)
 {
-	int field = get(generation, x, y);
-	set(generation, x, y, field ? 0 :1);
+	int field = generation[x][y];
+	generation[x][y] = field ? 0 :1;
 	color(x, y, field ? 0 : 1);
 	refresh();
 }
@@ -80,7 +65,7 @@ void increase(int **counter, int x, int y, int width, int height)
 	for (i = -1; i < 2; i++) {
 		for (j = -1; j < 2; j++) {
 			if (i || j) {
-				inc(counter, (width + x + i) % width, (height + y + j) % height);
+				counter[(width + x + i) % width][(height + y + j) % height]++;
 			}
 		}
 	}
@@ -88,24 +73,24 @@ void increase(int **counter, int x, int y, int width, int height)
 
 void calculate_next_generation(int **generation, int width, int height)
 {
-	int i, j;
+	int x, y;
 	int **counter;
 	allocate_array(&counter, width, height);
-	for (i = 0; i < width; i++) {
-		for (j = 0; j < height; j++) {
-			if (get(generation, i, j)) {
-				increase(counter, i, j, width, height);	
+	for (x = 0; x < width; x++) {
+		for (y = 0; y < height; y++) {
+			if (generation[x][y]) {
+				increase(counter, x, y, width, height);	
 			}
 		}
 	}
 	
-	for (i = 0; i < width; i++) {
-		for (j = 0; j < height; j++) {
-			int tmp = get(counter, i, j);
-			if (get(generation, i, j)) {
-				set(generation, i, j, tmp == 2 || tmp == 3 ? 1 : 0);
+	for (x = 0; x < width; x++) {
+		for (y = 0; y < height; y++) {
+			int tmp = counter[x][y];
+			if (generation[x][y]) {
+				generation[x][y] =  tmp == 2 || tmp == 3 ? 1 : 0;
 			} else {
-				set(generation, i, j, tmp == 3 ? 1 : 0);
+				generation[x][y] = tmp == 3 ? 1 : 0;
 			}
 		}
 	}
@@ -117,7 +102,7 @@ void draw(int **generation, int width, int height) {
 	int x, y;
 	for (x = 0; x < width; x++) {
 		for (y = 0; y < height; y++) {
-			color(x, y, get(generation, x, y));
+			color(x, y, generation[x][y]);
 		}
 	}
 	refresh();
