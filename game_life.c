@@ -8,22 +8,22 @@ enum {
 	delay_duration = 200
 };
 
-void allocate_array(int ***generation, int row, int col) 
+void allocate_array(int ***generation, int width, int height) 
 {
 	int i;
-	*generation = malloc(sizeof(int *) * row);
+	*generation = malloc(sizeof(int *) * width);
 	
-	for (i = 0; i < row; i++) {
-		*(*generation + i) = calloc(col, sizeof(int));
+	for (i = 0; i < width; i++) {
+		*(*generation + i) = calloc(height, sizeof(int));
 	}
 
 }
 
-void free_array(int ***generation, int row)
+void free_array(int ***generation, int width)
 {
 	int i;
 
-	for (i = 0; i < row; i++) {
+	for (i = 0; i < width; i++) {
 		free(*(*generation + i));
 	}
 	free(*generation);
@@ -53,17 +53,17 @@ void color(int x, int y, int is_alive)
 
 int get(int **arr, int x, int y) 
 {
-	return *(*(arr + y) + x);
+	return *(*(arr + x) + y);
 }
 
 void set(int **arr, int x, int y, int val)
 {
-	*(*(arr + y) + x) = val;
+	*(*(arr + x) + y) = val;
 }
 
 void inc(int **arr, int x, int y)
 {
-	*(*(arr + y) + x) += 1;
+	*(*(arr + x) + y) += 1;
 }
 
 void invert_field(int **generation, int x, int y)
@@ -74,33 +74,33 @@ void invert_field(int **generation, int x, int y)
 	refresh();
 }
 
-void increase(int **counter, int x, int y, int col, int row)
+void increase(int **counter, int x, int y, int width, int height)
 {
 	int i, j;
 	for (i = -1; i < 2; i++) {
 		for (j = -1; j < 2; j++) {
 			if (i || j) {
-				inc(counter, (col + x + i) % col, (row + y + j) % row);
+				inc(counter, (width + x + i) % width, (height + y + j) % height);
 			}
 		}
 	}
 }
 
-void calculate_next_generation(int **generation, int col, int row)
+void calculate_next_generation(int **generation, int width, int height)
 {
 	int i, j;
 	int **counter;
-	allocate_array(&counter, row, col);
-	for (i = 0; i < col; i++) {
-		for (j = 0; j < row; j++) {
+	allocate_array(&counter, width, height);
+	for (i = 0; i < width; i++) {
+		for (j = 0; j < height; j++) {
 			if (get(generation, i, j)) {
-				increase(counter, i, j, col, row);	
+				increase(counter, i, j, width, height);	
 			}
 		}
 	}
 	
-	for (i = 0; i < col; i++) {
-		for (j = 0; j < row; j++) {
+	for (i = 0; i < width; i++) {
+		for (j = 0; j < height; j++) {
 			int tmp = get(counter, i, j);
 			if (get(generation, i, j)) {
 				set(generation, i, j, tmp == 2 || tmp == 3 ? 1 : 0);
@@ -110,13 +110,13 @@ void calculate_next_generation(int **generation, int col, int row)
 		}
 	}
 
-	free_array(&counter, row);
+	free_array(&counter, height);
 }
 
-void draw(int **generation, int col, int row) {
+void draw(int **generation, int width, int height) {
 	int x, y;
-	for (x = 0; x < col; x++) {
-		for (y = 0; y < row; y++) {
+	for (x = 0; x < width; x++) {
+		for (y = 0; y < height; y++) {
 			color(x, y, get(generation, x, y));
 		}
 	}
@@ -125,7 +125,7 @@ void draw(int **generation, int col, int row) {
 
 int main() 
 {
-	int row, col, x, y, key;
+	int height, width, x, y, key;
 	int **generation;
 
 	initscr();
@@ -133,11 +133,11 @@ int main()
 	keypad(stdscr, 1);
 	noecho();
 
-	getmaxyx(stdscr, row, col);
-	allocate_array(&generation, row, col);
+	getmaxyx(stdscr, height, width);
+	allocate_array(&generation, width, height);
 
-	x = col / 2;
-	y = row / 2;
+	x = width / 2;
+	y = height / 2;
 
 	move(y, x);
 	refresh();
@@ -145,16 +145,16 @@ int main()
 	while ((key = getch()) != key_escape) {
 		switch (key) {
 			case KEY_UP:
-				move_cursor(&x, &y, 0, -1, col, row);
+				move_cursor(&x, &y, 0, -1, width, height);
 				break;
 			case KEY_DOWN:
-				move_cursor(&x, &y, 0, 1, col, row);
+				move_cursor(&x, &y, 0, 1, width, height);
 				break;
 			case KEY_RIGHT:
-				move_cursor(&x, &y, 1, 0, col, row);
+				move_cursor(&x, &y, 1, 0, width, height);
 				break;
 			case KEY_LEFT:
-				move_cursor(&x, &y, -1, 0, col, row);
+				move_cursor(&x, &y, -1, 0, width, height);
 				break;
 			case ' ':
 				invert_field(generation, x, y);
@@ -164,12 +164,12 @@ int main()
 	timeout(0);
 	curs_set(0);
 	while ((key = getch()) != key_escape) {
-		draw(generation, col, row);
-		calculate_next_generation(generation, col, row);
+		draw(generation, width, height);
+		calculate_next_generation(generation, width, height);
 		napms(delay_duration);
 	}
 
-	free_array(&generation, row);
+	free_array(&generation, height);
 	endwin();
 	return 0;
 
