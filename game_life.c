@@ -8,25 +8,35 @@ enum {
 	delay_duration = 200
 };
 
-void allocate_array(int ***generation, int width, int height) 
+void allocate_array(int ***array, int width, int height) 
 {
 	int i;
-	*generation = malloc(sizeof(int *) * width);
+	*array = malloc(sizeof(int *) * width);
 	
 	for (i = 0; i < width; i++) {
-		*(*generation + i) = calloc(height, sizeof(int));
+		*(*array + i) = calloc(height, sizeof(int));
 	}
 
 }
 
-void free_array(int ***generation, int width)
+void free_array(int ***array, int width)
 {
 	int i;
 
 	for (i = 0; i < width; i++) {
-		free(*(*generation + i));
+		free(*(*array + i));
 	}
-	free(*generation);
+	free(*array);
+}
+
+void clear_array(int **array, int width, int height) 
+{
+	int i, j;
+	for (i = 0; i < width; i++) {
+		for (j = 0; j < height; j++) {
+			array[i][j] = 0;
+		}
+	}
 }
 
 void move_cursor(int *x, int *y, int dx, int dy, int max_x, int max_y)
@@ -71,11 +81,9 @@ void increase(int **counter, int x, int y, int width, int height)
 	}
 }
 
-void calculate_next_generation(int **generation, int width, int height)
+void calculate_next_generation(int **generation, int **counter, int width, int height)
 {
 	int x, y;
-	int **counter;
-	allocate_array(&counter, width, height);
 	for (x = 0; x < width; x++) {
 		for (y = 0; y < height; y++) {
 			if (generation[x][y]) {
@@ -94,8 +102,7 @@ void calculate_next_generation(int **generation, int width, int height)
 			}
 		}
 	}
-
-	free_array(&counter, height);
+	clear_array(counter, width, height);
 }
 
 void draw(int **generation, int width, int height) {
@@ -111,7 +118,7 @@ void draw(int **generation, int width, int height) {
 int main() 
 {
 	int height, width, x, y, key;
-	int **generation;
+	int **generation, **counter;
 
 	initscr();
 	cbreak();
@@ -120,7 +127,7 @@ int main()
 
 	getmaxyx(stdscr, height, width);
 	allocate_array(&generation, width, height);
-
+	allocate_array(&counter, width, height);
 	x = width / 2;
 	y = height / 2;
 
@@ -150,7 +157,7 @@ int main()
 	curs_set(0);
 	while ((key = getch()) != key_escape) {
 		draw(generation, width, height);
-		calculate_next_generation(generation, width, height);
+		calculate_next_generation(generation, counter, width, height);
 		napms(delay_duration);
 	}
 
