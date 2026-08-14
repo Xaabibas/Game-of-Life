@@ -2,12 +2,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 
 enum {
 	success_code = 0,
 	failure_code = 1,
 	key_escape = 27,
-	delay_duration = 200
+	default_delay_duration = 200
 };
 
 void free_array(int ***array, int width)
@@ -56,7 +58,6 @@ void move_cursor(int *x, int *y, int dx, int dy, int max_x, int max_y)
 	*y %= max_y;
 	
 	move(*y, *x);
-	refresh();	
 }
 
 void color(int x, int y, int is_alive)
@@ -75,7 +76,6 @@ void invert_field(int **generation, int x, int y)
 	int field = generation[x][y];
 	generation[x][y] = field ? 0 :1;
 	color(x, y, field ? 0 : 1);
-	refresh();
 }
 
 void increase(int **counter, int x, int y, int width, int height)
@@ -114,20 +114,56 @@ void calculate_next_generation(int **generation, int **counter, int width, int h
 	clear_array(counter, width, height);
 }
 
-void draw(int **generation, int width, int height) {
+void draw(int **generation, int width, int height) 
+{
 	int x, y;
 	for (x = 0; x < width; x++) {
 		for (y = 0; y < height; y++) {
 			color(x, y, generation[x][y]);
 		}
 	}
-	refresh();
 }
 
-int main() 
+void random_fill(int **generation, int width, int height, int prob) 
+{
+	int x, y;
+	for (x = 0; x < width; x++) {
+		for (y = 0; y < height; y++) {
+			if (rand() % 100 < prob) {
+				generation[x][y] = 1;
+			} else {
+				generation[x][y] = 0;
+			}
+		}
+	}
+}
+
+int string_to_positive_int(char *str) 
+{
+	int acc = 0, prev = 0;
+
+	while (*str) {
+		if (*str < '0' || *str > '9') {
+			return -1;
+		}
+		prev = acc;
+		acc *= 10;
+		acc += *str - '0';
+		if (acc < 0 || prev > acc) {
+			return -1;
+		}
+		str++;
+	}
+	return acc;
+}
+
+int main(int argc, char **argv) 
 {
 	int height, width, x, y, key, visual_mode = 0;
+	int delay = default_delay_duration;
 	int **generation, **counter;
+	
+	srand(time(NULL));
 
 	initscr();
 	getmaxyx(stdscr, height, width);
@@ -138,10 +174,34 @@ int main()
 		return 1;
 	}
 
+
+	argv++;
+	while (*argv) {
+		if (0 == strcmp(*argv, "-h") || 0 == strcmp(*argv, "--help")) {
+			
+		} else if (0 == strcmp(*argv, "-r") || 0 == strcmp(*argv, "--rand")) {
+			int prob; 
+			argv++;
+			prob = string_to_positive_int(*argv);
+			if (prob < 0 || prob > 100) {
+				fprintf(stderr, "Probability must be not negative integer less than 100\n");
+				endwin();
+				return 1;	
+			}
+			random_fill(generation, width, height, prob);
+			draw(generation, width, height);
+		} else if (0 == strcmp(*argv, "-d") || 0 == strcmp(*argv, "--delay")) {
+		
+		} else {
+		
+		}
+		argv++;
+	}
+
 	cbreak();
 	keypad(stdscr, 1);
 	noecho();
-
+	
 	x = width / 2;
 	y = height / 2;
 
@@ -168,8 +228,9 @@ int main()
 
 		if (visual_mode) {
 			draw(generation, width, height);
+			refresh();
 			calculate_next_generation(generation, counter, width, height);
-			napms(delay_duration);
+			napms(delay);
 			continue;
 		}
 		switch (key) {
@@ -192,6 +253,7 @@ int main()
 			case ' ':
 				invert_field(generation, x, y);
 		}
+		refresh();
 	}
 
 	free_array(&generation, width);
