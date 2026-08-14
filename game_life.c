@@ -185,13 +185,21 @@ int main(int argc, char **argv)
 			prob = string_to_positive_int(*argv);
 			if (prob < 0 || prob > 100) {
 				fprintf(stderr, "Probability must be not negative integer less than 100\n");
+				fprintf(stderr, "You can use \"--help\" to get more information\n");
 				endwin();
 				return 1;	
 			}
 			random_fill(generation, width, height, prob);
 			draw(generation, width, height);
 		} else if (0 == strcmp(*argv, "-d") || 0 == strcmp(*argv, "--delay")) {
-		
+			argv++;
+			delay = string_to_positive_int(*argv);
+			if (delay < 1) {
+				fprintf(stderr, "Delay duration must be positive integer\n");
+				fprintf(stderr, "You can use \"--help\" to get more information\n");
+				endwin();
+				return 1;
+			}
 		} else {
 		
 		}
