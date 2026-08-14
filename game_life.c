@@ -1,23 +1,14 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdlib.h>
-
+#include <stdio.h>
 
 enum {
+	success_code = 0,
+	failure_code = 1,
 	key_escape = 27,
 	delay_duration = 200
 };
-
-void allocate_array(int ***array, int width, int height) 
-{
-	int i;
-	*array = malloc(sizeof(int *) * width);
-	
-	for (i = 0; i < width; i++) {
-		*(*array + i) = calloc(height, sizeof(int));
-	}
-
-}
 
 void free_array(int ***array, int width)
 {
@@ -27,6 +18,24 @@ void free_array(int ***array, int width)
 		free(*(*array + i));
 	}
 	free(*array);
+}
+
+int allocate_array(int ***array, int width, int height) 
+{
+	int i;
+	*array = calloc(width, sizeof(int *));
+	if (!*array) {
+		return failure_code;
+	}
+	for (i = 0; i < width; i++) {
+		*(*array + i) = calloc(height, sizeof(int));
+		if (!*(*array + i)) {
+			free_array(array, width);
+			return failure_code;		
+		}
+	}
+	return success_code;
+
 }
 
 void clear_array(int **array, int width, int height) 
@@ -121,13 +130,18 @@ int main()
 	int **generation, **counter;
 
 	initscr();
+	getmaxyx(stdscr, height, width);
+	
+	if (allocate_array(&generation, width, height) || allocate_array(&counter, width, height)) {
+		fprintf(stderr, "Something went wrong\n");
+		endwin();
+		return 1;
+	}
+
 	cbreak();
 	keypad(stdscr, 1);
 	noecho();
 
-	getmaxyx(stdscr, height, width);
-	allocate_array(&generation, width, height);
-	allocate_array(&counter, width, height);
 	x = width / 2;
 	y = height / 2;
 
@@ -161,7 +175,9 @@ int main()
 		napms(delay_duration);
 	}
 
-	free_array(&generation, height);
+	free_array(&generation, width);
+	free_array(&counter, width);
+	
 	endwin();
 	return 0;
 
