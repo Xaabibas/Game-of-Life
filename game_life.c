@@ -126,7 +126,7 @@ void draw(int **generation, int width, int height) {
 
 int main() 
 {
-	int height, width, x, y, key;
+	int height, width, x, y, key, visual_mode = 0;
 	int **generation, **counter;
 
 	initscr();
@@ -147,32 +147,51 @@ int main()
 
 	move(y, x);
 	refresh();
-	
-	while ((key = getch()) != key_escape) {
+
+	while (1) {
+		key = getch();
+		if (key == key_escape) {
+			break;
+		}
+		
+		if (key == '\n' || key == KEY_ENTER) {
+			visual_mode = ~visual_mode + 2;
+			if (visual_mode) {
+				timeout(0);
+				curs_set(0);
+			} else {
+				timeout(-1);
+				curs_set(1);
+				move(y, x);
+			}
+		}
+
+		if (visual_mode) {
+			draw(generation, width, height);
+			calculate_next_generation(generation, counter, width, height);
+			napms(delay_duration);
+			continue;
+		}
 		switch (key) {
 			case KEY_UP:
+			case 'k':
 				move_cursor(&x, &y, 0, -1, width, height);
 				break;
 			case KEY_DOWN:
+			case 'j':
 				move_cursor(&x, &y, 0, 1, width, height);
 				break;
 			case KEY_RIGHT:
+			case 'l':
 				move_cursor(&x, &y, 1, 0, width, height);
 				break;
 			case KEY_LEFT:
+			case 'h':
 				move_cursor(&x, &y, -1, 0, width, height);
 				break;
 			case ' ':
 				invert_field(generation, x, y);
 		}
-	}
-
-	timeout(0);
-	curs_set(0);
-	while ((key = getch()) != key_escape) {
-		draw(generation, width, height);
-		calculate_next_generation(generation, counter, width, height);
-		napms(delay_duration);
 	}
 
 	free_array(&generation, width);
